@@ -7,14 +7,14 @@ def main(page: ft.Page):
     # global start_sel_date
     page.title = "Trading Parameters"
     page.padding = 30
-    page.vertical_alignment = "center"
+    page.vertical_alignment = "top"
     page.horizontal_alignment = "center"
     page.theme_mode = 'light'
 
     start_date_tx = ft.Text("No start date selected", size=16)
     end_date_tx = ft.Text("No end date selected", size=16)
     start_time_tx = ft.Text("No start time selected", size=16)
-    end_time_tx = ft.Text("No end time selected", size=16, color="red")
+    end_time_tx = ft.Text("No end time selected", size=16)
     start_sel_time = None
     end_sel_time = None
 
@@ -105,16 +105,25 @@ def main(page: ft.Page):
         on_entry_mode_change=handle_entry_mode_change,
     )
     strike_gap = ft.TextField(label="Symbol Strike Gap", keyboard_type=ft.KeyboardType.NUMBER, width=200)
+    ce_strike_difference = ft.TextField(label="CE ATM Difference", keyboard_type=ft.KeyboardType.NUMBER, width=200)
+    multi_ui = ft.TextField(label="Multiplier", keyboard_type=ft.KeyboardType.NUMBER, width=200)
+    pe_strike_difference = ft.TextField(label="PE ATM Difference", keyboard_type=ft.KeyboardType.NUMBER, width=200)
     lot_size = ft.TextField(label="Lot Size", keyboard_type=ft.KeyboardType.NUMBER, width=200)
     margin = ft.TextField(label="Estimated Margin", keyboard_type=ft.KeyboardType.NUMBER, width=200)
+
     entry_action = ft.Dropdown(
         label="Entry Action",
         options=[ft.dropdown.Option("Buy"), ft.dropdown.Option("Sell")],
         width=200
     )
+    expiry_ui = ft.Dropdown(
+        label="Expiry",
+        options=[ft.dropdown.Option("weekly"), ft.dropdown.Option("next weekly"), ft.dropdown.Option("monthly")],
+        width=200
+    )
 
     # Target controls
-    target_check = ft.Checkbox(label="Enable Target")
+    target_check = ft.Checkbox(label="Target")
     target_value = ft.TextField(label="Target Value", keyboard_type=ft.KeyboardType.NUMBER, visible=False, width=150)
     target_type = ft.Dropdown(
         options=[ft.dropdown.Option("ABS"), ft.dropdown.Option("%")],
@@ -131,8 +140,23 @@ def main(page: ft.Page):
 
     # Create form controls
     symbol = ft.TextField(label="Symbol", width=200)
-    # start_date_tx = ft.Text(value=start_sel_date)
-    # Submit handler
+
+
+    #Hnadle SL checkbox change
+    sl_check = ft.Checkbox(label="SL")
+    sl_value = ft.TextField(label="SL Value", keyboard_type=ft.KeyboardType.NUMBER, visible=False, width=150)
+    sl_type = ft.Dropdown(
+        options=[ft.dropdown.Option("ABS"), ft.dropdown.Option("%")],
+        visible=False,
+        width=100
+    )
+
+    def sl_changed(e):
+        sl_value.visible = sl_check.value
+        sl_type.visible = sl_check.value
+        page.update()
+    sl_check.on_change = sl_changed
+    
     def submit_clicked(e):
         if start_time.value>end_time.value:
             print("time error")
@@ -144,17 +168,24 @@ def main(page: ft.Page):
                 "start_time": start_time.value,
                 "end_time": end_time.value,
                 "strike_gap": int(strike_gap.value) if strike_gap.value else 0,
+                "ce_atm_difference": int(ce_strike_difference.value) if ce_strike_difference.value else 0,
+                "pe_atm_difference": int(pe_strike_difference.value) if pe_strike_difference.value else 0,
                 "lot_size": int(lot_size.value) if lot_size.value else 0,
                 "margin": float(margin.value) if margin.value else 0.0,
                 "entry_action": entry_action.value,
+                "expiry": expiry_ui.value,
                 "target_enabled": target_check.value,
                 "target_value": float(target_value.value) if target_check.value and target_value.value else None,
-                "target_type": target_type.value if target_check.value else None
+                "target_type": target_type.value if target_check.value else None,
+                "sl_enabled": sl_check.value,
+                "sl_value": float(sl_value.value) if sl_check.value and sl_value.value else None,
+                "sl_type": sl_type.value if sl_check.value else None,
             }
             print("Form submitted:", output)
     # Build the form
     page.add(
-        ft.Column([
+        ft.Row([
+            ft.Column([
             ft.Row([symbol], alignment="center"),
             ft.Row([
                 ft.Column([
@@ -207,16 +238,32 @@ def main(page: ft.Page):
 
              
             ],alignment="center"),
-            ft.Row([strike_gap, lot_size], alignment="center"),
+            ft.Row([strike_gap], alignment="center"),
+            ft.Row([lot_size], alignment="center"),
             ft.Row([margin], alignment="center"),
             ft.Row([entry_action], alignment="center"),
+          
+            ft.ElevatedButton("Submit", on_click=submit_clicked)
+        ], spacing=20, alignment="left"),
+        ft.Column([
+            ft.Row([ce_strike_difference], alignment="center"),
+            ft.Row([pe_strike_difference], alignment ="center"),
+            ft.Row([multi_ui], alignment="center"),
+            ft.Row([expiry_ui], alignment="center"),
             ft.Row([
                 target_check,
                 ft.Container(target_value, padding=5),
                 ft.Container(target_type, padding=5)
-            ], alignment="center"),
-            ft.ElevatedButton("Submit", on_click=submit_clicked)
-        ], spacing=20)
+                 ], alignment="center"),
+            ft.Row([
+                sl_check,
+                ft.Container(sl_value, padding=5),
+                ft.Container(sl_type, padding=5)
+                 ], alignment="center"),     
+        ], spacing=20, alignment="center" )
+        ], alignment="top")
+       
+        
     )
 
 ft.app(main)
