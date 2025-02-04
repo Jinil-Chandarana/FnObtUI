@@ -11,10 +11,16 @@ def main(page: ft.Page):
     page.horizontal_alignment = "center"
     page.theme_mode = 'light'
 
-
-     # UI Elements
     start_date_tx = ft.Text("No start date selected", size=16)
     end_date_tx = ft.Text("No end date selected", size=16)
+    start_time_tx = ft.Text("No start time selected", size=16)
+    end_time_tx = ft.Text("No end time selected", size=16, color="red")
+    start_sel_time = None
+    end_sel_time = None
+
+    max_end_time = datetime.time(15, 29, 59)
+    min_start_time = datetime.time(9, 15, 0)
+
 
     start_sel_date = None  # Store the selected start date
     end_sel_date = None  # Store the selected end date
@@ -22,18 +28,37 @@ def main(page: ft.Page):
     def start_dt_handle_change(e):
         nonlocal start_sel_date    
         start_sel_date = (e.control.value).date()
-        start_date_tx.value = f"Selected: {e.control.value.date()}"
+        start_date_tx.value = f"{e.control.value.date()}"
         page.update()
-        
     
     def end_dt_handle_change(e):
         nonlocal end_sel_date
         end_sel_date = (e.control.value).date()
-        end_date_tx.value = f"End Date: {end_sel_date}"
+        end_date_tx.value = f"{end_sel_date}"
         page.update()
-        # page.add(ft.Text(f" end Date changed: {(e.control.value).date()}"))
-        # return (e.control.value).date()
-    
+
+    def start_time_handle_change(e):
+        nonlocal start_sel_time
+        if e.control.value < min_start_time:
+            page.add(ft.Text("Start time cannot be earlier than 09:15:00!", color="red"))
+        else:
+            start_sel_time = (e.control.value)
+            start_time_tx.value = f"{start_sel_time}"
+        page.update()
+
+
+    def end_time_handle_change(e):
+        nonlocal end_sel_time
+        if start_sel_time and e.control.value <= start_sel_time:
+            page.add(ft.Text("End time must be greater than start time!", color="red"))
+        elif e.control.value > max_end_time:
+            page.add(ft.Text("End time cannot exceed 15:29:59!", color="red"))
+        else:
+            end_sel_time = e.control.value
+            end_time_tx.value = f"{end_sel_time}"
+        page.update()
+
+
     def handle_dismissal(e):
         page.add(ft.Text(f"DatePicker dismissed"))
 
@@ -66,7 +91,7 @@ def main(page: ft.Page):
         confirm_text="Confirm",
         error_invalid_text="Time out of range",
         help_text="Pick your time slot",
-        on_change=handle_start_time_change,
+        on_change=start_time_handle_change,
         on_dismiss=handle_dismissal,
         on_entry_mode_change=handle_entry_mode_change,
     )
@@ -75,7 +100,7 @@ def main(page: ft.Page):
         confirm_text="Confirm",
         error_invalid_text="Time out of range",
         help_text="Pick your time slot",
-        on_change=handle_end_time_change,
+        on_change=end_time_handle_change,
         on_dismiss=handle_dismissal,
         on_entry_mode_change=handle_entry_mode_change,
     )
@@ -104,8 +129,6 @@ def main(page: ft.Page):
 
     target_check.on_change = target_changed
 
-
-    
     # Create form controls
     symbol = ft.TextField(label="Symbol", width=200)
     # start_date_tx = ft.Text(value=start_sel_date)
@@ -160,24 +183,28 @@ def main(page: ft.Page):
                             on_click=open_end_date_picker
                         ),
                         end_date_tx,]),
-                    # ft.Text("end date:"),
-                        
-                    # ft.Text("start time:"),
-                    ft.ElevatedButton
-                    (
-                        "start Time",
-                        icon=ft.icons.ACCESS_TIME,
-                        on_click=lambda _: page.open(start_time),
-                    ),
-                    ft.ElevatedButton(
-                        "end Time",
-                        icon=ft.icons.ACCESS_TIME,
-                        on_click=lambda _: page.open(end_time),
-                    ),
+
+                    ft.Row([
+                        ft.ElevatedButton
+                        (
+                            "start Time",
+                            icon=ft.icons.ACCESS_TIME,
+                            on_click=lambda _: page.open(start_time),
+                        ),
+                        start_time_tx,
+                    ]),
+                    ft.Row([
+                        ft.ElevatedButton
+                        (
+                                "end Time",
+                                icon=ft.icons.ACCESS_TIME,
+                                on_click=lambda _: page.open(end_time),
+                        ), 
+                        end_time_tx
+                    ]),
                     
                 ], alignment="center"),
-            # ft.Text(value=start_sel_date)
-            
+
              
             ],alignment="center"),
             ft.Row([strike_gap, lot_size], alignment="center"),
